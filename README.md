@@ -3,6 +3,7 @@ C.O.R.E. – Fueled by Groq AI, transforming automation with voice control, gest
 ---
 
 **Problem Statement**
+
 Problem Statement 1: 
 Build a creative and interactive multimodal application powered by Groq, levarging its capabilities to solve real world problems with focus on user experience and innovation.
 
