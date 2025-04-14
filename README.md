@@ -3,14 +3,17 @@ C.O.R.E. – Fueled by Groq AI, transforming automation with voice control, gest
 ---
 
 **Problem Statement**
-Problem Statement 1: Build a creative and interactive multimodal application powered by Groq, levarging its capabilities to solve real world problems with focus on user experience and innovation.
+Problem Statement 1: 
+Build a creative and interactive multimodal application powered by Groq, levarging its capabilities to solve real world problems with focus on user experience and innovation.
 
 **Objective**
+
 C.O.R.E. leverages Groq AI to create an intelligent, seamless automation system that combines voice control, gesture-based interactions, and real-time responsiveness. By integrating multimodal AI, it aims to empower users with a futuristic AI assistant capable of intuitive control, smart home integration, and effortless task automation, all while ensuring optimal performance and interactivity. This project targets enhancing user experience, improving efficiency, and delivering smart automation in everyday life.
 
 ### Team Members:  
 Ishanya Tripathi 
 https://www.linkedin.com/in/ishanya-tripathi-48a869293/
+
 Why you chose this problem:
 We chose to tackle the challenge of smart automation because, in today's fast-paced world, people are increasingly looking for intuitive, hands-free solutions to interact with their devices. We wanted to push the boundaries of what AI can do in terms of responsiveness and multimodal interaction, merging voice control and gesture-based inputs into one seamless experience. The goal was to create an AI assistant that can automate tasks, respond intelligently, and feel intuitive and futuristic, all powered by Groq AI.
 
