@@ -102,104 +102,6 @@ def send_file():
             httpd.serve_forever()
 
     threading.Thread(target=server_thread, daemon=True).start()
-def gesture_mouse_control():
-    global mouse_control_active
-    mouse_control_active = True
-    
-    mpHands = mp.solutions.hands
-    hands = mpHands.Hands(min_detection_confidence=0.7)
-    mpDraw = mp.solutions.drawing_utils
-    
-    cap = cv2.VideoCapture(0)
-    
-    while mouse_control_active:
-        success, frame = cap.read()
-        if not success:
-            break
-        
-        frame = cv2.flip(frame, 1)
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = hands.process(rgb_frame)
-        
-        lmDict = {}
-        
-        if results.multi_hand_landmarks:
-            for hand_landmarks in results.multi_hand_landmarks:
-                for id, lm in enumerate(hand_landmarks.landmark):
-                    h, w, _ = frame.shape
-                    lmDict[id] = (int(lm.x * w), int(lm.y * h))
-                
-                mpDraw.draw_landmarks(frame, hand_landmarks, mpHands.HAND_CONNECTIONS)
-        
-        if 8 in lmDict:
-            x, y = lmDict[8]
-            screen_x = np.interp(x, [0, frame.shape[1]], [0, pyautogui.size()[0]])
-            screen_y = np.interp(y, [0, frame.shape[0]], [0, pyautogui.size()[1]])
-            pyautogui.moveTo(screen_x, screen_y)
-        
-        if 4 in lmDict and 8 in lmDict:
-            x1, y1 = lmDict[4]
-            x2, y2 = lmDict[8]
-            distance = np.hypot(x2 - x1, y2 - y1)
-            if distance < 30:
-                pyautogui.click()
-        
-        cv2.imshow("Gesture Mouse", frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-    
-    cap.release()
-    cv2.destroyAllWindows()
-    mouse_control_active = False
-def gesture_volume_control():
-    global volume_control_active
-    volume_control_active = True
-    
-    cap = cv2.VideoCapture(0)
-    
-    mpHands = mp.solutions.hands
-    hands = mpHands.Hands(min_detection_confidence=0.7)
-    mpDraw = mp.solutions.drawing_utils
-    
-    devices = AudioUtilities.GetSpeakers()
-    interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-    volume = cast(interface, POINTER(IAudioEndpointVolume))
-    
-    volMin, volMax = volume.GetVolumeRange()[:2]
-    
-    while volume_control_active:
-        success, img = cap.read()
-        if not success:
-            break
-        
-        imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        results = hands.process(imgRGB)
-        
-        lmDict = {}
-        
-        if results.multi_hand_landmarks:
-            for hand_landmarks in results.multi_hand_landmarks:
-                for id, lm in enumerate(hand_landmarks.landmark):
-                    h, w, _ = img.shape
-                    lmDict[id] = (int(lm.x * w), int(lm.y * h))
-                
-                mpDraw.draw_landmarks(img, hand_landmarks, mpHands.HAND_CONNECTIONS)
-        
-        if 4 in lmDict and 8 in lmDict:
-            x1, y1 = lmDict[4]
-            x2, y2 = lmDict[8]
-            
-            length = hypot(x2 - x1, y2 - y1)
-            vol = np.interp(length, [20, 200], [volMin, volMax])
-            volume.SetMasterVolumeLevel(vol, None)
-        
-        cv2.imshow('Gesture Volume Control', img)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-    
-    cap.release()
-    cv2.destroyAllWindows()
-    volume_control_active = False
 
 # ========== Main Assistant Loop ==========
 def assistant():
@@ -215,14 +117,7 @@ def assistant():
         if "increase volume" in command:
             pyautogui.press("volumeup")
             speak("Increasing volume.")
-        elif "enable gesture mouse" in command:
-            threading.Thread(target=gesture_mouse_control, daemon=True).start()
-            speak("Gesture mouse control activated.")
-            
-        elif "enable gesture volume" in command:
-            threading.Thread(target=gesture_volume_control, daemon=True).start()
-            speak("Gesture volume control activated.")
-
+        
         elif "decrease volume" in command:
             pyautogui.press("volumedown")
             speak("Decreasing volume.")
