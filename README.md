@@ -1,6 +1,8 @@
 C.O.R.E: Cognitive Optimized Responsive Entity
-C.O.R.E. – Fueled by Groq AI, transforming automation with voice control, gesture-based actions, and seamless responsiveness!
+
+Fueled by Groq AI, transforming automation with voice control, gesture-based actions, and seamless responsiveness!
 ---
+This project is a **desktop application** powered by Groq’s LLaMA3 and designed to run locally on your machine. It cannot be accessed through a website as it is intended for desktop environments.
 
 **Problem Statement**
 
