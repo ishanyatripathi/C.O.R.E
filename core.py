@@ -13,7 +13,16 @@ import keyboard
 import http.server
 import socketserver
 import socket
-
+from PyQt5.QtCore import QTimer, Qt, pyqtSignal, QObject
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton
+from PyQt5.QtGui import QFont
+import psutil
+import cv2
+import numpy as np
+import mediapipe as mp
+from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+from ctypes import cast, POINTER
+from comtypes import CLSCTX_ALL
 # ========== Voice Functions ==========
 def speak(text):
     engine = pyttsx3.init()
@@ -93,6 +102,104 @@ def send_file():
             httpd.serve_forever()
 
     threading.Thread(target=server_thread, daemon=True).start()
+def gesture_mouse_control():
+    global mouse_control_active
+    mouse_control_active = True
+    
+    mpHands = mp.solutions.hands
+    hands = mpHands.Hands(min_detection_confidence=0.7)
+    mpDraw = mp.solutions.drawing_utils
+    
+    cap = cv2.VideoCapture(0)
+    
+    while mouse_control_active:
+        success, frame = cap.read()
+        if not success:
+            break
+        
+        frame = cv2.flip(frame, 1)
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        results = hands.process(rgb_frame)
+        
+        lmDict = {}
+        
+        if results.multi_hand_landmarks:
+            for hand_landmarks in results.multi_hand_landmarks:
+                for id, lm in enumerate(hand_landmarks.landmark):
+                    h, w, _ = frame.shape
+                    lmDict[id] = (int(lm.x * w), int(lm.y * h))
+                
+                mpDraw.draw_landmarks(frame, hand_landmarks, mpHands.HAND_CONNECTIONS)
+        
+        if 8 in lmDict:
+            x, y = lmDict[8]
+            screen_x = np.interp(x, [0, frame.shape[1]], [0, pyautogui.size()[0]])
+            screen_y = np.interp(y, [0, frame.shape[0]], [0, pyautogui.size()[1]])
+            pyautogui.moveTo(screen_x, screen_y)
+        
+        if 4 in lmDict and 8 in lmDict:
+            x1, y1 = lmDict[4]
+            x2, y2 = lmDict[8]
+            distance = np.hypot(x2 - x1, y2 - y1)
+            if distance < 30:
+                pyautogui.click()
+        
+        cv2.imshow("Gesture Mouse", frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+    
+    cap.release()
+    cv2.destroyAllWindows()
+    mouse_control_active = False
+def gesture_volume_control():
+    global volume_control_active
+    volume_control_active = True
+    
+    cap = cv2.VideoCapture(0)
+    
+    mpHands = mp.solutions.hands
+    hands = mpHands.Hands(min_detection_confidence=0.7)
+    mpDraw = mp.solutions.drawing_utils
+    
+    devices = AudioUtilities.GetSpeakers()
+    interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+    volume = cast(interface, POINTER(IAudioEndpointVolume))
+    
+    volMin, volMax = volume.GetVolumeRange()[:2]
+    
+    while volume_control_active:
+        success, img = cap.read()
+        if not success:
+            break
+        
+        imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        results = hands.process(imgRGB)
+        
+        lmDict = {}
+        
+        if results.multi_hand_landmarks:
+            for hand_landmarks in results.multi_hand_landmarks:
+                for id, lm in enumerate(hand_landmarks.landmark):
+                    h, w, _ = img.shape
+                    lmDict[id] = (int(lm.x * w), int(lm.y * h))
+                
+                mpDraw.draw_landmarks(img, hand_landmarks, mpHands.HAND_CONNECTIONS)
+        
+        if 4 in lmDict and 8 in lmDict:
+            x1, y1 = lmDict[4]
+            x2, y2 = lmDict[8]
+            
+            length = hypot(x2 - x1, y2 - y1)
+            vol = np.interp(length, [20, 200], [volMin, volMax])
+            volume.SetMasterVolumeLevel(vol, None)
+        
+        cv2.imshow('Gesture Volume Control', img)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+    
+    cap.release()
+    cv2.destroyAllWindows()
+    volume_control_active = False
 
 # ========== Main Assistant Loop ==========
 def assistant():
@@ -108,6 +215,13 @@ def assistant():
         if "increase volume" in command:
             pyautogui.press("volumeup")
             speak("Increasing volume.")
+        elif "enable gesture mouse" in command:
+            threading.Thread(target=gesture_mouse_control, daemon=True).start()
+            speak("Gesture mouse control activated.")
+            
+        elif "enable gesture volume" in command:
+            threading.Thread(target=gesture_volume_control, daemon=True).start()
+            speak("Gesture volume control activated.")
 
         elif "decrease volume" in command:
             pyautogui.press("volumedown")
@@ -158,3 +272,83 @@ def assistant():
 # ========== Start Assistant Thread ==========
 if __name__ == "__main__":
     threading.Thread(target=assistant).start()
+
+
+class StatusSignal(QObject):
+    update_status = pyqtSignal(str)
+
+class COREUI(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("C.O.R.E. Interface")
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.showFullScreen()
+
+        self.main_layout = QVBoxLayout()
+        self.top_layout = QHBoxLayout()
+        self.bottom_layout = QHBoxLayout()
+
+        self.date_label = QLabel(time.strftime("%Y-%m-%d %H:%M:%S"), self)
+        self.date_label.setAlignment(Qt.AlignLeft)
+        self.date_label.setStyleSheet("color: #ADD8E6;")
+        self.date_label.setFont(QFont('Arial', 40))
+
+        self.system_label = QLabel("System Online", self)
+        self.system_label.setAlignment(Qt.AlignRight)
+        self.system_label.setStyleSheet("color: #ADD8E6;")
+        self.system_label.setFont(QFont('Arial', 50))
+
+        self.top_layout.addWidget(self.date_label)
+        self.top_layout.addWidget(self.system_label)
+        self.main_layout.addLayout(self.top_layout)
+
+        self.circle_label = QLabel("C.O.R.E", self)
+        self.circle_label.setAlignment(Qt.AlignCenter)
+        self.circle_label.setFont(QFont('Arial', 100, QFont.Bold))
+        self.circle_label.setStyleSheet("color: #ADD8E6; border: 3px solid #ADD8E6; border-radius: 100px; padding: 20px;")
+        self.main_layout.addWidget(self.circle_label, 1, Qt.AlignCenter)
+
+        self.status_label = QLabel("Status: Idle", self)
+        self.status_label.setAlignment(Qt.AlignLeft)
+        self.status_label.setStyleSheet("color: #ADD8E6;")
+        self.status_label.setFont(QFont('Arial', 50))
+
+        self.cpu_label = QLabel("CPU Usage: 0%", self)
+        self.cpu_label.setAlignment(Qt.AlignRight)
+        self.cpu_label.setStyleSheet("color: #ADD8E6;")
+        self.cpu_label.setFont(QFont('Arial', 50))
+
+        self.bottom_layout.addWidget(self.status_label)
+        self.bottom_layout.addWidget(self.cpu_label)
+        self.main_layout.addLayout(self.bottom_layout)
+
+        self.mic_button = QPushButton("Mic", self)
+        self.mic_button.setStyleSheet("background-color: #ADD8E6; color: white; border-radius: 20px;")
+        self.mic_button.setFixedSize(100, 50)
+        self.main_layout.addWidget(self.mic_button, 0, Qt.AlignBottom | Qt.AlignHCenter)
+
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_info)
+        self.timer.start(1000)
+        self.setLayout(self.main_layout)
+        self.show()
+
+        # Initialize status signal
+        self.status_signal = StatusSignal()
+
+        # Connect the signal to update status
+        self.status_signal.update_status.connect(self.set_status)
+
+    def update_info(self):
+        self.date_label.setText(time.strftime("%Y-%m-%d %H:%M:%S"))
+        cpu_usage = psutil.cpu_percent(interval=1)
+        self.cpu_label.setText(f"CPU Usage: {cpu_usage}%")
+
+    def set_status(self, status_text):
+        self.status_label.setText(f"Status: {status_text}")
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    window = COREUI()
+    sys.exit(app.exec_())
