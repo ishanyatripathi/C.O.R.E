@@ -9,15 +9,12 @@ import pyttsx3
 import speech_recognition as sr
 import webbrowser
 import pyautogui
+import keyboard
 import http.server
 import socketserver
 import socket
-import base64
-import psutil
-import cv2
 
-# ===================== MAIN =====================
-
+# ========== Voice Functions ==========
 def speak(text):
     engine = pyttsx3.init()
     engine.setProperty('rate', 200)
@@ -37,8 +34,7 @@ def listen():
         speak("Sorry, I didn't catch that.")
     return ""
 
-
-# ===================== GROQ INTEGRATION =====================
+# ========== Groq API Integration ==========
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
@@ -51,21 +47,20 @@ def ask_groq_text(prompt):
     payload = {
         "model": "llama3-8b-8192",
         "messages": [
-            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "system", "content": "You are a helpful, witty assistant."},
             {"role": "user", "content": prompt}
         ]
     }
 
     try:
         response = requests.post(GROQ_API_URL, headers=headers, json=payload)
-        response.raise_for_status()  # Checks for HTTP errors
+        response.raise_for_status()
         result = response.json()
         return result["choices"][0]["message"]["content"]
-    except requests.exceptions.RequestException as e:
-        return f"Error during API request: {e}"
     except Exception as e:
-        return f"Error during AI response: {e}"
+        return f"Error: {e}"
 
+# ========== File Transfer ==========
 def send_file():
     def server_thread():
         PORT = 8000
@@ -73,13 +68,12 @@ def send_file():
         DIRECTORY = os.path.dirname(FILE_PATH)
 
         if not os.path.exists(FILE_PATH):
-            print(f"Error: File '{FILE_PATH}' not found!")
+            print("File not found!")
             speak("File not found.")
             return
 
         os.chdir(DIRECTORY)
 
-        # Get local IP dynamically
         def get_local_ip():
             try:
                 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -91,18 +85,16 @@ def send_file():
                 return "127.0.0.1"
 
         local_ip = get_local_ip()
-
         handler = http.server.SimpleHTTPRequestHandler
         with socketserver.TCPServer(("", PORT), handler) as httpd:
             url = f"http://{local_ip}:{PORT}/{os.path.basename(FILE_PATH)}"
-            print(f"[File Transfer] Serving at: {url}")
+            print(f"Serving at: {url}")
             speak(f"File is ready to download at {url}")
             httpd.serve_forever()
 
     threading.Thread(target=server_thread, daemon=True).start()
 
-
-# ===================== MAIN ASSISTANT LOOP =====================
+# ========== Main Assistant Loop ==========
 def assistant():
     speak("System is Online. Let's begin")
 
@@ -111,7 +103,7 @@ def assistant():
         if not command:
             continue
 
-        print(f"Recognized command: {command}")
+        print(f"Command: {command}")
 
         if "increase volume" in command:
             pyautogui.press("volumeup")
@@ -125,6 +117,20 @@ def assistant():
             pyautogui.press("volumemute")
             speak("Muting audio.")
 
+        elif "increase brightness" in command:
+            try:
+                keyboard.press_and_release('brightness_up')
+                speak("Increasing brightness.")
+            except Exception:
+                speak("Brightness control failed.")
+
+        elif "decrease brightness" in command:
+            try:
+                keyboard.press_and_release('brightness_down')
+                speak("Decreasing brightness.")
+            except Exception:
+                speak("Brightness control failed.")
+
         elif "open browser" in command:
             webbrowser.open("https://www.google.com")
             speak("Opening browser.")
@@ -137,22 +143,18 @@ def assistant():
                 response = ask_groq_text(user_prompt)
                 speak(response)
 
+        elif "transfer file" in command:
+            send_file()
+            speak("Transferring file...")
+
         elif "exit" in command or "quit" in command:
             speak("Goodbye!")
             break
-        elif "transfer file" in command:
-            send_file()
-            speak("Transferring File")
 
         else:
             response = ask_groq_text(command)
-            speak(response[:250])
+            speak(response[:250])  # Trim long answers
 
-
-# ===================== START THREAD =====================
-if __name__ == '__main__':
-    def start_assistant():
-        assistant()
-
-    assistant_thread = threading.Thread(target=start_assistant)
-    assistant_thread.start()
+# ========== Start Assistant Thread ==========
+if __name__ == "__main__":
+    threading.Thread(target=assistant).start()
