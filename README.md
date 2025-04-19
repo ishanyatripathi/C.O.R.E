@@ -87,7 +87,7 @@ Groq API Key (For AI responses via Groq)
 Threading for background processes
 ### Local Setup:
 # Clone the repo
-git clone https://github.com/your-team/project-name
+git clone https://github.com/ishanyatripathi/C.O.R.E
 
 # Install dependencies
 cd project-name
