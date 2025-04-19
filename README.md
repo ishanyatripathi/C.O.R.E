@@ -61,7 +61,7 @@ Ensure responsiveness and real-time processing with multi-threaded operations.
 
 ## 📽️ Demo & Deliverables
 
-- **Demo Video Link:** [Paste YouTube or Loom link here]  
+- **Demo Video Link:** https://youtu.be/dllZjtPFAe4
 - **Pitch Deck / PPT Link:** [Paste Google Slides / PDF link here]  
 
 ---
