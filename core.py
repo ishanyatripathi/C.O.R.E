@@ -23,6 +23,7 @@ import mediapipe as mp
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 from ctypes import cast, POINTER
 from comtypes import CLSCTX_ALL
+
 # ========== Voice Functions ==========
 def speak(text):
     engine = pyttsx3.init()
@@ -117,7 +118,11 @@ def assistant():
         if "increase volume" in command:
             pyautogui.press("volumeup")
             speak("Increasing volume.")
-        
+
+        elif "open notepad" in command:
+            os.system("notepad.exe")
+            speak("Opening Notepad")
+
         elif "decrease volume" in command:
             pyautogui.press("volumedown")
             speak("Decreasing volume.")
