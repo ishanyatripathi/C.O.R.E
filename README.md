@@ -1,3 +1,4 @@
+![image](https://github.com/user-attachments/assets/50535689-a991-45fb-836c-896115a55476)
 C.O.R.E: Cognitive Optimized Responsive Entity
 
 Fueled by Groq AI, transforming automation with voice control, gesture-based actions, and seamless responsiveness!
